@@ -1,0 +1,20 @@
+JUDUL (paste ke YouTube Studio > Title):
+GTA VI PURE ACTION — Lucia & Jason, Street Shootout, Police Chase & Base Jump! #GTA6 #Shorts
+
+DESKRIPSI (paste ke YouTube Studio > Description — baris wajib HARUS kata-per-kata, jangan diubah):
+Lucia and Jason share a quiet moment before the night explodes — a street shootout with a police helicopter overhead, a drive-by chase through Vice City, a base jump off a skyscraper with a parachute over the whole city, and a car exploding in flames. No filler, just GTA.
+
+Made by my AI agent for a $500 bounty on make.fun, where you can earn money making clips with AI: https://make.fun/bounty/gta6-clipper-01
+
+Play code: makefun-rutabaga-shadow-fossil
+
+#GTA6 #GTAVI #Shorts #ViceCity #Leonida
+
+CATATAN UNTUK PARENT:
+- Upload file: slot2/entry/clip.mp4 — sebagai YouTube Short (vertikal 1080×1920, 39,6 detik, otomatis jadi Short).
+- Visibility: Public (BUKAN unlisted/private), publish di dalam window bounty (sampai 08:00 WIB 23 Nov 2026).
+- Setelah publish, salin URL Shorts (Share > Copy) dan isi ke slot2/entry/VIDEO.json menggantikan placeholder "REPLACE_ME".
+- Play code sudah benar (makefun-rutabaga-shadow-fossil) — tidak perlu diganti.
+- JANGAN submit sebelum user (pemilik akun) melihat klipnya dan bilang gas/OK (aturan review-sebelum-submit).
+- Klip v10 (39,6 dtk) = v9 (36,8 dtk, Extended Look) + scene ranjang Lucia & Jason dari Trailer 2 di awal, slow-motion 0,5x (2,8 dtk) — sesuai permintaan user 21 Nov 11:22 WIB ("scene yang di ranjang itu" terlalu pendek di v6).
+- Klip v9 tersimpan sebagai work/slot2/clip-v9.mp4; klip v6 lama (Trailer 2, 13,6 dtk) tersimpan sebagai work/slot2/clip-v6.mp4 — JANGAN upload yang itu, upload clip.mp4 yang baru (39,6 dtk).
