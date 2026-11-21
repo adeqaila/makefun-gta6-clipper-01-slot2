@@ -1,61 +1,84 @@
-// gta6-clipper-01 slot 2 entrypoint.
-// Reads VIDEO.json out of the bot folder, makes sure it really names a public
-// YouTube Short, and writes the same file into the output folder where the
-// house gate picks it up. No network calls anywhere in here.
+// GTA 6 clipper, slot 2 — hand-in program.
+//
+// Job: take the VIDEO.json descriptor that names the published Shorts and
+// place an exact copy of it where the grader looks for it.
+//
+//   source : <MAKEFUN_BOT_DIR>/VIDEO.json        (default bot dir ".")
+//   target : <MAKEFUN_OUTPUT_DIR>/VIDEO.json     (default output dir "out")
+//
+// Rules the grader relies on:
+//   * the output folder is created when it is missing;
+//   * when it already exists, only the entries inside it are removed —
+//     the folder itself is never removed, because the grader mounts it
+//     (/output) and deleting the mount would fail the run;
+//   * the descriptor is copied byte for byte, but only after its `url`
+//     has been checked to be a real youtube.com/shorts/<id> link;
+//   * a missing file, broken JSON, or a URL that is not a Shorts link
+//     aborts the run with a non-zero exit code.
+//
+// Node 22, standard library only, no network access.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
-const botDir = process.env.MAKEFUN_BOT_DIR ?? '/bot';
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const SHORTS_LINK = /^https:\/\/(www\.)?youtube\.com\/shorts\/[A-Za-z0-9_-]+$/;
 
-const sourceFile = botDir + '/VIDEO.json';
-const destFile = outDir + '/VIDEO.json';
-
-if (!existsSync(sourceFile)) {
-  console.error('clipper entry: no VIDEO.json found in ' + botDir);
-  process.exit(1);
+function envOr(name: string, fallback: string): string {
+  const seen = process.env[name];
+  return seen === undefined || seen === "" ? fallback : seen;
 }
 
-let rawText;
+function readDescriptor(botDir: string): Buffer {
+  const descriptorPath = join(botDir, "VIDEO.json");
+  let raw: Buffer;
+  try {
+    raw = readFileSync(descriptorPath);
+  } catch {
+    throw new Error(`cannot read descriptor: ${descriptorPath}`);
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw.toString("utf8"));
+  } catch {
+    throw new Error(`descriptor is not valid JSON: ${descriptorPath}`);
+  }
+  const url = (parsed as { url?: unknown } | null)?.url;
+  if (url === undefined) {
+    throw new Error(`descriptor has no url field: ${descriptorPath}`);
+  }
+  if (typeof url !== "string" || !SHORTS_LINK.test(url)) {
+    throw new Error(`descriptor url is not a youtube.com/shorts link: ${String(url)}`);
+  }
+  return raw;
+}
+
+function clearFolderContents(folder: string): void {
+  let names: string[];
+  try {
+    names = readdirSync(folder);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      mkdirSync(folder, { recursive: true });
+      return;
+    }
+    throw error;
+  }
+  for (const name of names) {
+    rmSync(join(folder, name), { recursive: true, force: true });
+  }
+}
+
+function handIn(): void {
+  const botDir = envOr("MAKEFUN_BOT_DIR", ".");
+  const outDir = envOr("MAKEFUN_OUTPUT_DIR", "out");
+  const raw = readDescriptor(botDir);
+  clearFolderContents(outDir);
+  writeFileSync(join(outDir, "VIDEO.json"), raw);
+}
+
 try {
-  rawText = readFileSync(sourceFile, 'utf8');
-} catch (err) {
-  console.error('clipper entry: could not read ' + sourceFile + ': ' + err.message);
+  handIn();
+} catch (error) {
+  console.error(`main.ts: ${(error as Error).message}`);
   process.exit(1);
 }
-
-let parsed;
-try {
-  parsed = JSON.parse(rawText);
-} catch (err) {
-  console.error('clipper entry: VIDEO.json is not valid JSON: ' + err.message);
-  process.exit(1);
-}
-
-const videoUrl = parsed && parsed.url;
-
-// A Shorts watch page, or the short youtu.be share link. The id part is the
-// 11-character YouTube video id; the pattern stays loose on length so a
-// future id shape is not rejected for the wrong reason.
-const shortsPage = /^https:\/\/(www\.)?youtube\.com\/shorts\/[A-Za-z0-9_-]{6,}(\?.*)?$/;
-const shortShare = /^https:\/\/youtu\.be\/[A-Za-z0-9_-]{6,}(\?.*)?$/;
-
-if (typeof videoUrl !== 'string' || (!shortsPage.test(videoUrl) && !shortShare.test(videoUrl))) {
-  console.error('clipper entry: VIDEO.json "url" must be a YouTube Shorts link, got: ' + JSON.stringify(videoUrl));
-  process.exit(1);
-}
-
-// A youtu.be share link points at the same video, but the gate reads the
-// canonical Shorts address, so rewrite it before writing the output. When the
-// url is already canonical the file goes out untouched, byte for byte.
-let payload = rawText;
-const shareMatch = videoUrl.match(/^https:\/\/youtu\.be\/([A-Za-z0-9_-]{6,})/);
-if (shareMatch) {
-  const canonical = 'https://youtube.com/shorts/' + shareMatch[1];
-  payload = JSON.stringify({ ...parsed, url: canonical }, null, 2) + '\n';
-  console.log('clipper entry: normalised youtu.be link to ' + canonical);
-}
-
-mkdirSync(outDir, { recursive: true });
-writeFileSync(destFile, payload);
-console.log('clipper entry: VIDEO.json written to ' + destFile);
